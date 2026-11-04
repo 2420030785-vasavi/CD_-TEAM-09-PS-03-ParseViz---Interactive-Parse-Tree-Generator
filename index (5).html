@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ParseViz – LL(1) Grammar Studio</title>
+<style>
+:root{--bg:#eef2ef;--pn:#fff;--ink:#14211c;--mu:#5b6b64;--ln:#d3ddd7;--ac:#0f766e;--acl:#d5ede9;--ok:#15803d;--okl:#dcf3e3;--er:#b91c1c;--erl:#fbdada;--cf:#b45309;--cfl:#fdecc8;--mono:ui-monospace,Menlo,Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,sans-serif}
+header{padding:14px 24px;background:var(--ink);color:#e8f3ee;display:flex;gap:16px;align-items:baseline;flex-wrap:wrap}
+header h1{margin:0;font:700 24px Georgia,serif}header span{color:#9fb8ae;font-size:13px}
+.wrap{display:grid;grid-template-columns:340px 1fr;gap:16px;padding:16px;max-width:1500px;margin:auto}
+@media(max-width:900px){.wrap{grid-template-columns:1fr}}
+aside,main{background:var(--pn);border:1px solid var(--ln);border-radius:8px;padding:16px}
+aside{align-self:start;position:sticky;top:8px}
+h2{font:700 18px Georgia,serif;margin:0 0 8px}h3{font-size:15px;margin:16px 0 6px}
+label{font-weight:600;font-size:13px;display:block;margin:12px 0 4px}
+textarea,input[type=text],select{width:100%;font:14px var(--mono);border:1px solid var(--ln);border-radius:6px;padding:8px;background:#fafcfb;color:var(--ink)}
+textarea{height:170px;resize:vertical}
+button{font:600 13px system-ui;border:1px solid var(--ink);background:var(--pn);color:var(--ink);border-radius:6px;padding:6px 11px;cursor:pointer}
+button:hover{background:var(--acl)}button.p{background:var(--ac);border-color:var(--ac);color:#fff}button.p:hover{background:#0b5f58}
+:focus-visible{outline:3px solid #f59e0b;outline-offset:1px}
+.row{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:12px}
+.stat{border:1px solid var(--ln);border-radius:6px;padding:8px 10px;cursor:pointer;background:#fafcfb;text-align:left}
+.stat b{display:block;font:700 20px Georgia,serif}.stat small{color:var(--mu)}
+.stat.ok{background:var(--okl)}.stat.bad{background:var(--erl)}.stat.warn{background:var(--cfl)}
+nav{display:flex;gap:4px;flex-wrap:wrap;border-bottom:2px solid var(--ln);margin-bottom:14px}
+nav button{border:0;border-radius:6px 6px 0 0;background:none;padding:8px 12px}
+nav button.on{background:var(--ink);color:#fff}
+.tab{display:none}.tab.on{display:block}
+table{border-collapse:collapse;font:13px var(--mono);margin:6px 0}
+th,td{border:1px solid var(--ln);padding:5px 9px;text-align:left;vertical-align:top}th{background:#eaf0ed}
+.tw{overflow:auto;max-width:100%}
+td.empty{background:#f4f6f5;color:#aab6b0;text-align:center}td.fill{background:var(--acl);cursor:pointer}
+td.conf{background:var(--cfl);cursor:pointer;font-weight:700}td.sel{outline:3px solid var(--ink)}
+tr.cur td{background:#fff3b0}tr.acc td{background:var(--okl)}tr.rej td{background:var(--erl)}
+.step{border-left:4px solid var(--ac);background:#f6faf8;padding:8px 12px;margin:8px 0;border-radius:0 6px 6px 0}
+.step.cf{border-color:var(--cf)}.step pre{margin:4px 0 0;font:13px var(--mono);white-space:pre-wrap}
+.msg{padding:8px 12px;border-radius:6px;margin:8px 0}.msg.ok{background:var(--okl);color:#0d4d24}.msg.bad{background:var(--erl);color:#7f1313}.msg.warn{background:var(--cfl);color:#6b3304}
+.chip{display:inline-block;font:13px var(--mono);background:var(--acl);border-radius:4px;padding:1px 7px;margin:1px}
+.chip.t{background:#e9e3f7}.big .chip{font-size:18px;padding:3px 11px}
+.why{font:12px var(--mono);color:var(--mu)}
+#tree{border:1px solid var(--ln);border-radius:6px;overflow:auto;background:#fafcfb;max-height:480px}
+.ed{stroke:#8aa39a;stroke-width:1.4;opacity:0;transition:opacity .45s}.ed.on{opacity:1}
+.ctrl{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0}.ctrl input[type=range]{flex:1;min-width:120px}
+.pcard{border:2px solid var(--ink);border-radius:8px;padding:16px;text-align:center}
+.score{display:flex;gap:18px;flex-wrap:wrap;margin-bottom:10px}.score b{font:700 22px Georgia,serif}
+@media(prefers-reduced-motion:reduce){.n,.ed{transition:none}}
+.n{opacity:0;transition:opacity .45s,transform .45s;transform:translateY(-8px)}.n.on{opacity:1;transform:none}
+.n rect{fill:transparent;stroke:none}.n text{font:italic 400 19px Georgia,serif;text-anchor:middle;pointer-events:none;fill:var(--ink)}
+.n:not(.t) text{font-style:normal;font-weight:600}.n.t text{fill:#3b2a85}.n.m text{fill:var(--ok)}
+.n.e rect{fill:var(--erl);stroke:var(--er);stroke-width:2}.n.e text{fill:var(--er)}
+.ed{stroke:#222;stroke-width:1.2;opacity:0;transition:opacity .45s}.ed.on{opacity:1}
+#tree{background:#fff}.bar{height:8px;background:var(--ln);border-radius:4px;margin:6px 0 14px}.bar i{display:block;height:100%;width:0;background:var(--ac);border-radius:4px;transition:width .4s}
+.opts{display:grid;gap:8px;margin:12px auto;max-width:560px}.opt{text-align:left;font:14px var(--mono);padding:10px 12px}.opt.good{background:var(--okl);border-color:var(--ok)}.opt.pick:not(.good){background:var(--erl);border-color:var(--er)}
+.chip.tg,.chip.click{cursor:pointer;border:2px solid transparent;font-size:15px}.chip.tg.sel{background:var(--ac);color:#fff}.chip.click{border:1px dashed var(--mu)}
+#pmodes button.on{background:var(--ink);color:#fff}details{margin-top:6px}summary{cursor:pointer;color:var(--ac);font-weight:600}
+.refgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}.refbox{border:1px solid var(--ln);border-radius:6px;padding:8px 12px;margin-bottom:12px;background:#f6faf8}.refbox pre,.pcard pre{margin:4px 0;font:13px var(--mono);text-align:left;white-space:pre-wrap}
+tr.k-try td{background:#eaf3ff}tr.k-match td{background:var(--okl)}tr.k-fail td{background:var(--erl)}tr.k-back td{background:var(--cfl)}tr.hid{display:none}tr.cur2 td{outline:2px solid var(--ink);outline-offset:-2px}
+</style></head><body>
+<header><h1>ParseViz</h1><span>LL(1) grammar practice studio — transform, compute, tabulate, parse, predict</span></header>
+<div class="wrap">
+<aside>
+<h2>Grammar</h2>
+<label for="preset">Example grammars</label>
+<select id="preset"></select>
+<label for="g">Productions <small>(spaces between symbols; ε = eps; uppercase = nonterminal; id and similar words are single tokens)</small></label>
+<textarea id="g" spellcheck="false"></textarea>
+<label for="s">Test string <small>(space-separated tokens)</small></label>
+<input type="text" id="s" spellcheck="false" autocomplete="off" placeholder="type your own string, e.g. id + id * id">
+<div class="row" id="samples"></div>
+<div id="sres"></div><div class="row"><button class="p" id="go">Analyze &amp; parse</button><button id="clr">Clear</button><button id="rand">Random valid string</button></div>
+<div id="gerr"></div>
+</aside>
+<main>
+<div class="stats" id="stats"></div>
+<nav id="nav"></nav>
+
+<section class="tab" id="t0"><h2>1 · Left recursion elimination</h2><p class="why">Rule: A → Aα | β becomes A → βA′ and A′ → αA′ | ε. Indirect recursion is first turned into immediate recursion by substitution.</p><div id="lr"></div></section>
+<section class="tab" id="t1"><h2>2 · Left factoring</h2><p class="why">Rule: A → αβ₁ | αβ₂ becomes A → αA′ and A′ → β₁ | β₂, repeated until no two alternatives share a first symbol.</p><div id="lf"></div><h3>Final grammar used for analysis</h3><div id="fg"></div></section>
+<section class="tab" id="t2"><h2>3 · FIRST and FOLLOW</h2><p class="why">Click a set member to see which production put it there.</p><div id="ff"></div><div id="ffwhy" class="msg warn" style="display:none"></div></section>
+<section class="tab" id="t3"><h2>4 · LL(1) parsing table</h2><p class="why">Click a cell to see why it is filled. Amber cells are conflicts: the grammar is not LL(1).</p><div id="tbl"></div><div id="cellinfo"></div></section>
+<section class="tab on" id="t4"><h2>5 · Parse trace and tree</h2><div id="res"></div>
+<div class="ctrl"><button id="first">⏮</button><button id="prev">◀</button><button class="p" id="play">▶ Play</button><button id="next">▶</button><button id="last">⏭</button>
+<input type="range" id="sl" min="0" value="0" aria-label="Step"><label style="margin:0">Speed <input type="range" id="spd" min="150" max="1500" value="600" style="width:90px"></label></div>
+<div id="tree"></div>
+<h3>Trace</h3><div class="tw" style="max-height:340px"><table id="trace"></table></div></section>
+<section class="tab" id="t5"><h2>6 · Backtracking parser</h2><p class="why">A recursive-descent parser with no table. It tries each alternative in order and undoes its work when one fails. Compare its steps with the LL(1) parser, which never has to undo anything.</p>
+<div class="ctrl"><label for="btg" style="margin:0">Grammar to parse with</label><select id="btg" style="width:auto"><option value="g1">After removing left recursion</option><option value="g">Your original grammar (left recursion loops)</option><option value="g2">Fully transformed (LL(1)-ready)</option></select></div>
+<div id="btres"></div>
+<div class="ctrl"><button id="btfirst">⏮</button><button id="btprev">◀</button><button class="p" id="btplay">▶ Play</button><button id="btnext">▶</button><button id="btlast">⏭</button><input type="range" id="btsl" min="0" value="0" aria-label="Backtracking step"><label style="margin:0">Speed <input type="range" id="btspd" min="80" max="1200" value="450" style="width:90px"></label></div>
+<div id="btstate"></div><div class="tw" style="max-height:380px"><table id="bttr"></table></div><h3>Successful derivation (leftmost)</h3><div id="btder"></div></section>
+<section class="tab" id="t6"><h2>7 · Practice mode</h2><p class="why">Pick a drill. Every round has 10 questions drawn from the grammar in the sidebar.</p>
+<div class="row" id="pmodes"></div>
+<div class="ctrl"><label style="margin:0" for="pdiff">Difficulty</label><select id="pdiff" style="width:auto"><option value="easy">Easy (short strings)</option><option value="med" selected>Medium</option><option value="hard">Hard (long strings)</option></select><button id="prs">Reset score</button><span class="why" id="pround"></span></div>
+<div class="score"><div><b id="sc">0</b><br>score</div><div><b id="tot">0</b><br>answered</div><div><b id="acc">–</b><br>accuracy</div><div><b id="stk">0</b><br>streak</div><div><b id="best">0</b><br>best streak</div></div>
+<div class="bar"><i id="pbar"></i></div>
+<div id="pref"></div><div class="pcard" id="pq"></div><div id="pfb"></div><p class="why" id="pper"></p><h3>Recent answers</h3><div id="phist"></div></section>
+</main></div>
+<script>
+const $=s=>document.querySelector(s),EPS='ε',EPSW=['ε','eps','epsilon','λ','@'];
+const PRE={
+"Expression (left recursion)":{g:"E -> E + T | T\nT -> T * F | F\nF -> ( E ) | id",s:["id + id * id","id + * id",""]},
+"Dangling else (conflict)":{g:"S -> i E t S | i E t S e S | a\nE -> b",s:["i b t a e a","i b t i b t a e a","i b t"]},
+"Epsilon productions":{g:"S -> A B\nA -> a A | eps\nB -> b B | eps",s:["a a b","b a",""]},
+"Left factoring":{g:"S -> a b c | a b d | a e | f",s:["a b d","a b","f"]},
+"Indirect left recursion":{g:"S -> A\nA -> S x | y",s:["y x x","x y",""]},
+"Balanced parentheses":{g:"S -> ( S ) S | eps",s:["( ( ) ) ( )","( ( )",""]}};
+let S={},step=0,timer=null,P={n:0,sc:0,ok:0,stk:0,cur:null,hist:[]};
+const show=a=>a.length?a.join(' '):EPS,prod=(A,a)=>A+' → '+show(a);
+const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+const clone=g=>new Map([...g].map(([k,v])=>[k,v.map(a=>[...a])]));
+const uniq=alts=>{const s=new Set();return alts.filter(a=>{const k=a.join('\u0001');return s.has(k)?0:s.add(k)})};
+const gtext=g=>[...g].map(([A,v])=>A+' → '+v.map(show).join(' | ')).join('\n');
+const fresh=(A,...gs)=>{let n=A+"'";while(gs.some(g=>g.has(n)))n+="'";return n};
+function parseG(txt){const g=new Map(),err=[];
+ txt.split('\n').forEach(l=>{l=l.trim();if(!l||l[0]=='#')return;const m=l.split(/->|→/);
+  if(m.length!=2){err.push('Line needs exactly one "->": '+l);return}
+  const A=m[0].trim();if(!/^[A-Z]\S*$/.test(A)){err.push('Left side must be one nonterminal starting with a capital letter: '+l);return}
+  if(!g.has(A))g.set(A,[]);
+  m[1].split('|').forEach(a=>{a=a.trim();let t=EPSW.includes(a)?[]:/\s/.test(a)?a.split(/\s+/):/^[a-z][\w]*$/.test(a)?[a]:(a.match(/[A-Z]'*|./g)||[]);g.get(A).push(t.filter(x=>!EPSW.includes(x)))})});
+ for(const[A,v]of g){g.set(A,uniq(v));v.forEach(a=>a.forEach(x=>{if(/^[A-Z]/.test(x)&&!g.has(x))err.push('Nonterminal '+x+' is used but has no productions')}))}
+ if(!g.size)err.push('Enter at least one production.');return{g,err}}
+function elimLR(g0,steps){const w=clone(g0),names=[...w.keys()];
+ names.forEach((A,i)=>{
+  for(let j=0;j<i;j++){const B=names[j];let hit=false;const out=[];
+   w.get(A).forEach(a=>{if(a[0]===B){hit=true;w.get(B).forEach(d=>out.push([...d,...a.slice(1)]))}else out.push(a)});
+   if(hit){const before=prod(A,[B,'γ']);w.set(A,uniq(out));steps.push({t:`Indirect recursion check: substitute ${B}'s alternatives into ${A} → ${B} γ`,b:'',a:A+' → '+w.get(A).map(show).join(' | ')})}}
+  const alts=w.get(A),rec=alts.filter(a=>a[0]===A&&a.length>1),base=alts.filter(a=>a[0]!==A);
+  const triv=alts.length-rec.length-base.length;
+  if(!rec.length){if(triv){w.set(A,base);steps.push({t:`${A} → ${A} is a useless self-loop; removed`,b:'',a:A+' → '+base.map(show).join(' | ')})}return}
+  const A2=fresh(A,w),al=rec.map(a=>a.slice(1));
+  w.set(A,base.length?base.map(b=>[...b,A2]):[[A2]]);
+  w.set(A2,[...al.map(x=>[...x,A2]),[]]);
+  steps.push({t:`${A} is left-recursive. Split into α (recursive tails) and β (other alternatives); introduce ${A2}.`,
+   b:`α = ${al.map(show).join(' | ')}\nβ = ${base.length?base.map(show).join(' | '):'(none – ' + A + ' derives no string)'}\nBefore: ${A} → ${alts.map(show).join(' | ')}`,
+   a:`${A} → ${w.get(A).map(show).join(' | ')}\n${A2} → ${w.get(A2).map(show).join(' | ')}`})});
+ return w}
+function leftFactor(g0,steps){const w=clone(g0);let ch=true;
+ while(ch){ch=false;for(const[A,alts]of[...w]){const grp=new Map();
+  alts.forEach(a=>{const k=a.length?a[0]:'\0';(grp.get(k)||grp.set(k,[]).get(k)).push(a)});
+  const f=[...grp.values()].find(x=>x.length>1&&x[0].length);if(!f)continue;
+  let p=0;while(f.every(a=>a.length>p&&a[p]===f[0][p]))p++;
+  const A2=fresh(A,w),pre=f[0].slice(0,p);
+  w.set(A,[...alts.filter(a=>!f.includes(a)),[...pre,A2]]);w.set(A2,uniq(f.map(a=>a.slice(p))));
+  steps.push({t:`Alternatives of ${A} share the common prefix "${pre.join(' ')}"`,b:f.map(a=>prod(A,a)).join('\n'),
+   a:`${A} → ${w.get(A).map(show).join(' | ')}\n${A2} → ${w.get(A2).map(show).join(' | ')}`});ch=true;break}}
+ return w}
+function firstFollow(g,start){const F={},Fo={},RF={},RFo={};for(const A of g.keys()){F[A]=new Set();Fo[A]=new Set()}
+ const fs=seq=>{const r=new Set();let all=true;for(const x of seq){if(!g.has(x)){r.add(x);all=false;break}F[x].forEach(t=>t!==EPS&&r.add(t));if(!F[x].has(EPS)){all=false;break}}if(all)r.add(EPS);return r};
+ let ch=true;while(ch){ch=false;for(const[A,v]of g)for(const a of v)for(const t of fs(a))if(!F[A].has(t)){F[A].add(t);RF[A+'|'+t]=`${t==EPS?'ε':t} ∈ FIRST(${A}) because of ${prod(A,a)}`;ch=true}}
+ Fo[start].add('$');RFo[start+'|$']=`$ ∈ FOLLOW(${start}) because ${start} is the start symbol`;
+ ch=true;while(ch){ch=false;for(const[A,v]of g)for(const a of v)a.forEach((B,i)=>{if(!g.has(B))return;const beta=a.slice(i+1),fb=fs(beta);
+  const add=(t,why)=>{if(!Fo[B].has(t)){Fo[B].add(t);RFo[B+'|'+t]=`${t} ∈ FOLLOW(${B}) because of ${prod(A,a)}: ${why}`;ch=true}};
+  fb.forEach(t=>t!==EPS&&add(t,`${t} ∈ FIRST(${show(beta)})`));
+  if(fb.has(EPS))Fo[A].forEach(t=>add(t,beta.length?`${show(beta)} can vanish, so FOLLOW(${A}) flows into FOLLOW(${B})`:`${B} is last, so FOLLOW(${A}) flows into FOLLOW(${B})`))})}
+ return{F,Fo,RF,RFo,fs}}
+function buildTable(g,ffr){const M={},terms=new Set();
+ for(const[A,v]of g){M[A]={};v.forEach(a=>a.forEach(x=>!g.has(x)&&terms.add(x)))}terms.add('$');
+ for(const[A,v]of g)for(const a of v){const f=ffr.fs(a),put=(t,why)=>{(M[A][t]=M[A][t]||[]).push({a,why})};
+  f.forEach(t=>t!==EPS&&put(t,`${t} ∈ FIRST(${show(a)})`));
+  if(f.has(EPS))ffr.Fo[A].forEach(t=>put(t,`${show(a)} can derive ε and ${t} ∈ FOLLOW(${A})`))}
+ const conf=[];for(const A in M)for(const t in M[A])if(M[A][t].length>1)conf.push({A,t,ps:M[A][t].map(x=>prod(A,x.a))});
+ return{M,terms:[...terms].sort((a,b)=>a=='$'?1:b=='$'?-1:a<b?-1:1),conf}}
+function runParse(g,M,start,toks){const root={id:0,s:start,ch:[]},nodes=[root],rows=[];let st=[{s:'$'},{s:start,n:root}],i=0,res=null;const inp=[...toks,'$'];
+ const snap=(act,x)=>rows.push({stack:st.map(e=>e.s).reverse().join(' '),input:inp.slice(i).join(' '),act,nc:nodes.length,...x});
+ while(!res){const top=st[st.length-1],a=inp[i];
+  if(top.s==='$'){if(a==='$'){snap('Accept ✔');res={ok:true}}else{snap(`Error: extra input "${a}" after a complete parse`);res={ok:false,pos:i,msg:`Unexpected "${a}" at token ${i+1}: the grammar was already complete.`}}break}
+  if(!g.has(top.s)){if(top.s===a){top.n.m=rows.length;snap(`Match "${a}"`);st.pop();i++}else{snap(`Error: expected "${top.s}", found "${a}"`,{err:top.n.id});res={ok:false,pos:i,err:top.n.id,msg:`Token ${i+1} is "${a==='$'?'end of input':a}" but "${top.s}" was expected.`}}continue}
+  const cell=M[top.s][a];
+  if(!cell){const ex=Object.keys(M[top.s]);snap(`Error: M[${top.s}, ${a}] is empty`,{err:top.n.id});res={ok:false,pos:i,err:top.n.id,msg:`At ${a==='$'?'end of input':'token '+(i+1)+' "'+a+'"'}: ${top.s} cannot start with this. Expected one of: ${ex.join(', ')||'(nothing)'}.`};break}
+  const pk=cell.find(x=>x.a.length)||cell[0],p=pk.a;st.pop();
+  const kids=p.length?p.map(s=>({id:nodes.length+(0),s})):[{s:EPS}];kids.forEach(k=>{k.id=nodes.length;k.ch=[];if(!g.has(k.s))k.t=1;if(k.s===EPS)k.eps=1;nodes.push(k);top.n.ch.push(k)});
+  if(p.length)for(let k=kids.length-1;k>=0;k--)st.push({s:kids[k].s,n:kids[k]});
+  snap(`Output ${prod(top.s,p)}`+(cell.length>1?`  ⚠ conflict: resolved by preferring the non-ε production`:''))}
+ return{root,nodes,rows,res}}
+function tokenize(str,terms){const T=[...terms].filter(t=>t!=='$').sort((a,b)=>b.length-a.length),out=[];str=str.trim();
+ if(/\s/.test(str))return str.split(/\s+/).filter(x=>!EPSW.includes(x));
+ for(let i=0;i<str.length;){const m=T.find(t=>str.startsWith(t,i));if(m){out.push(m);i+=m.length}else out.push(str[i++])}return out.filter(x=>!EPSW.includes(x))}
+function analyze(){const{g,err}=parseG($('#g').value);$('#gerr').innerHTML=err.map(e=>`<div class="msg bad">${esc(e)}</div>`).join('');if(err.length)return;
+ const lrS=[],lfS=[],start=[...g.keys()][0],g1=elimLR(g,lrS),g2=leftFactor(g1,lfS),ffr=firstFollow(g2,start),tb=buildTable(g2,ffr);
+ const toks=tokenize($('#s').value,tb.terms),pr=runParse(g2,tb.M,start,toks);
+ S={g,g1,g2,start,lrS,lfS,ffr,tb,toks,pr};step=0;stop();render();sideRes();return S}
+function sideRes(){const{pr,toks,tb}=S,bad=t=>!tb.terms.includes(t);$('#sres').innerHTML=`<div class="msg ${pr.res.ok?'ok':'bad'}"><b>${pr.res.ok?'Accepted':'Rejected'}</b>${pr.res.ok?'':' – '+esc(pr.res.msg)}<div style="margin-top:4px">Tokens read: ${toks.length?toks.map((t,i)=>`<span class="chip t" style="${bad(t)?'background:var(--er);color:#fff':(!pr.res.ok&&i==pr.res.pos)?'outline:2px solid var(--er)':''}">${esc(t)}</span>`).join(''):'ε (empty string)'}</div>${toks.some(bad)?'<div class="why">Red tokens are not terminals of this grammar.</div>':''}</div>`}
+function stepsHTML(st,none){return st.length?st.map(s=>`<div class="step"><b>${esc(s.t)}</b>${s.b?`<pre>${esc(s.b)}</pre>`:''}<pre>⇒ ${esc(s.a)}</pre></div>`).join(''):`<div class="msg ok">${none}</div>`}
+function render(){const{g,g1,g2,lrS,lfS,ffr,tb,pr}=S,nts=[...g2.keys()],ok=!tb.conf.length;S.bt=backtrack(S[$('#btg').value||'g1'],S.start,S.toks);
+ const st=[['Nonterminals',nts.length,'','t1'],['Terminals',tb.terms.length-1,'','t3'],['Left recursion',lrS.length,lrS.length?'warn':'ok','t0'],['Left factoring',lfS.length,lfS.length?'warn':'ok','t1'],
+  ['LL(1)?',ok?'Yes':'No',ok?'ok':'bad','t3'],['Conflicts',tb.conf.length,ok?'ok':'bad','t3'],['Input',pr.res.ok?'Accepted':'Rejected',pr.res.ok?'ok':'bad','t4'],['Backtracks',S.bt.backs,S.bt.backs||S.bt.aborted?'warn':'ok','t5']];
+ $('#stats').innerHTML=st.map(x=>`<button class="stat ${x[2]}" data-t="${x[3]}"><b>${x[1]}</b><small>${x[0]}</small></button>`).join('');
+ document.querySelectorAll('.stat').forEach(b=>b.onclick=()=>tab(+b.dataset.t.slice(1)));
+ $('#lr').innerHTML=stepsHTML(lrS,'No immediate or indirect left recursion found.')+`<h3>Grammar after step 1</h3><pre class="step">${esc(gtext(g1))}</pre>`;
+ $('#lf').innerHTML=stepsHTML(lfS,'No common prefixes found. Nothing to factor.');
+ $('#fg').innerHTML=`<pre class="step">${esc(gtext(g2))}</pre>`;
+ const mk=(set,R,k)=>[...set].map(t=>`<span class="chip ${t==EPS?'':'t'}" role="button" tabindex="0" data-w="${esc(R[k+'|'+t]||'')}">${t}</span>`).join('');
+ $('#ff').innerHTML=`<div class="tw"><table><tr><th>Nonterminal</th><th>FIRST</th><th>FOLLOW</th></tr>${nts.map(A=>`<tr><td>${A}</td><td>${mk(ffr.F[A],ffr.RF,A)}</td><td>${mk(ffr.Fo[A],ffr.RFo,A)}</td></tr>`).join('')}</table></div>`;
+ $('#ffwhy').style.display='none';
+ document.querySelectorAll('#ff .chip').forEach(c=>c.onclick=()=>{const w=$('#ffwhy');w.style.display='block';w.textContent=c.dataset.w});
+ let h=`<div class="tw"><table><tr><th></th>${tb.terms.map(t=>`<th>${t}</th>`).join('')}</tr>`;
+ nts.forEach(A=>{h+=`<tr><th>${A}</th>`;tb.terms.forEach(t=>{const c=tb.M[A][t];h+=!c?`<td class="empty" data-a="${A}" data-t="${esc(t)}">·</td>`:`<td class="${c.length>1?'conf':'fill'}" data-a="${A}" data-t="${esc(t)}">${c.map(x=>esc(prod(A,x.a))).join('<br>')}</td>`})+'</tr>'});
+ $('#tbl').innerHTML=(tb.conf.length?`<div class="msg bad"><b>Not LL(1): ${tb.conf.length} conflict${tb.conf.length>1?'s':''}.</b><br>${tb.conf.map(c=>`M[${c.A}, ${esc(c.t)}] holds ${c.ps.map(esc).join('  and  ')}`).join('<br>')}</div>`:`<div class="msg ok">No conflicts. This grammar is LL(1).</div>`)+h+'</table></div>';
+ $('#cellinfo').innerHTML='';
+ document.querySelectorAll('#tbl td').forEach(td=>td.onclick=()=>{document.querySelectorAll('#tbl td.sel').forEach(x=>x.classList.remove('sel'));td.classList.add('sel');const c=tb.M[td.dataset.a][td.dataset.t];
+  $('#cellinfo').innerHTML=`<div class="msg ${c?c.length>1?'warn':'ok':'bad'}">M[${td.dataset.a}, ${esc(td.dataset.t)}]: `+(c?c.map(x=>`<b>${esc(prod(td.dataset.a,x.a))}</b> — ${esc(x.why)}`).join('<br>'):'empty. Seeing this cell while parsing means a syntax error.')+'</div>'});
+ $('#res').innerHTML=pr.res.ok?`<div class="msg ok"><b>Accepted.</b> Tokens: ${S.toks.map(t=>`<span class="chip t">${esc(t)}</span>`).join('')||'ε (empty string)'}</div>`
+  :`<div class="msg bad"><b>Rejected.</b> ${esc(pr.res.msg)}<br>Input: ${S.toks.map((t,i)=>`<span class="chip t" ${i==pr.res.pos?'style="background:var(--er);color:#fff"':''}>${esc(t)}</span>`).join('')}${pr.res.pos>=S.toks.length?'<span class="chip" style="background:var(--er);color:#fff">$ (end)</span>':''}</div>`;
+ $('#sl').max=pr.rows.length-1;$('#sl').value=0;
+ $('#trace').innerHTML='<tr><th>#</th><th>Stack (top → bottom)</th><th>Remaining input</th><th>Action</th></tr>'+pr.rows.map((r,i)=>`<tr data-i="${i}"><td>${i+1}</td><td>${esc(r.stack)}</td><td>${esc(r.input)}</td><td>${esc(r.act)}</td></tr>`).join('');
+ document.querySelectorAll('#trace tr[data-i]').forEach(r=>r.onclick=()=>{stop();goto(+r.dataset.i)});
+ drawTree();goto(0);btRender()}
+function drawTree(){const{nodes,root}=S.pr;let x=0,maxD=0;const pos=[];
+ (function lay(n,d){maxD=Math.max(d,maxD);if(!n.ch.length)pos[n.id]={x:x++,d};else{n.ch.forEach(c=>lay(c,d+1));pos[n.id]={x:(pos[n.ch[0].id].x+pos[n.ch.at(-1).id].x)/2,d}}})(root,0);
+ const W=Math.max(x*58+48,320),H=(maxD+1)*66+30,px=p=>p.x*58+34,py=p=>p.d*66+28,lb=s=>esc(s).replace(/'/g,'′');
+ let s=`<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Parse tree">`;
+ nodes.forEach(n=>n.ch.forEach(c=>s+=`<line class="ed" data-id="${c.id}" x1="${px(pos[n.id])}" y1="${py(pos[n.id])+11}" x2="${px(pos[c.id])}" y2="${py(pos[c.id])-15}"/>`));
+ nodes.forEach(n=>{const p=pos[n.id],w=Math.max(n.s.length*10+10,26);s+=`<g transform="translate(${px(p)},${py(p)})"><g class="n ${n.t?'t':''}" data-id="${n.id}"><title>${esc(n.s)}</title><rect x="${-w/2}" y="-14" width="${w}" height="26" rx="5"/><text y="6">${lb(n.s)}</text></g></g>`});
+ $('#tree').innerHTML=s+'</svg>'}
+function goto(i){const{rows,res}=S.pr;step=Math.max(0,Math.min(i,rows.length-1));const r=rows[step];$('#sl').value=step;
+ document.querySelectorAll('#trace tr[data-i]').forEach(t=>{const k=+t.dataset.i;t.className=k==step?'cur':'';if(k==step&&k==rows.length-1)t.className=res.ok?'acc':'rej'});
+ const cur=document.querySelector('#trace tr.cur,#trace tr.acc,#trace tr.rej');cur&&cur.scrollIntoView({block:'nearest'});
+ document.querySelectorAll('#tree .n').forEach(e=>{const id=+e.dataset.id,n=S.pr.nodes[id];e.classList.toggle('on',id<r.nc);e.classList.toggle('m',n.m!==undefined&&n.m<=step);e.classList.toggle('e',r.err===id)});
+ document.querySelectorAll('#tree .ed').forEach(e=>e.classList.toggle('on',+e.dataset.id<r.nc))}
+function stop(){clearTimeout(timer);timer=null;$('#play').textContent='▶ Play'}
+function play(){if(timer)return stop();if(step>=S.pr.rows.length-1)goto(0);$('#play').textContent='⏸ Pause';
+ const tick=()=>{if(step>=S.pr.rows.length-1)return stop();goto(step+1);timer=setTimeout(tick,+$('#spd').value)};timer=setTimeout(tick,150)}
+function tab(i){document.querySelectorAll('.tab').forEach((t,k)=>t.classList.toggle('on',k==i));document.querySelectorAll('nav button').forEach((b,k)=>b.classList.toggle('on',k==i))}
+/* ---------- backtracking parser ---------- */
+function backtrack(g,start,toks,cap=3000){const rows=[],path=[],act={},n=toks.length;let aborted=null,tries=0,backs=0;
+ const log=(k,d,t,form,pos)=>{if(rows.length<cap)rows.push({k,d,t,form:form.join(' ')||'(empty)',pos})};
+ function expand(X,rest,pos,d,form){const alts=g.get(X);
+  for(let i=0;i<alts.length;i++){tries++;log('try',d,`Try ${prod(X,alts[i])}  (alternative ${i+1} of ${alts.length})`,form,pos);path.push([X,alts[i]]);
+   if(go([...alts[i],...rest],pos,d+1))return true;
+   path.pop();if(aborted)return false;backs++;log('back',d,`Backtrack: ${prod(X,alts[i])} failed`+(i+1<alts.length?'. Undo it and try the next alternative.':`. No alternatives left for ${X}.`),form,pos)}
+  return false}
+ function go(form,pos,d){if(aborted)return false;
+  if(rows.length>=cap){aborted='Step limit reached, so the log was cut short.';return false}
+  if(!form.length){if(pos===n)return true;log('fail',d,`Nothing left to derive but ${n-pos} token(s) remain unread`,form,pos);return false}
+  const X=form[0],rest=form.slice(1);
+  if(!g.has(X)){if(pos<n&&toks[pos]===X){log('match',d,`Match "${X}"`,form,pos);if(go(rest,pos+1,d+1))return true;if(!aborted)log('back',d,`Undo match "${X}"`,form,pos);return false}
+   log('fail',d,pos<n?`Expected "${X}" but found "${toks[pos]}"`:`Expected "${X}" but the input ended`,form,pos);return false}
+  const key=X+'@'+pos;act[key]=(act[key]||0)+1;
+  if(act[key]>6){aborted=`${X} was expanded again and again without reading any input. This is left recursion: a top-down parser loops forever on it.`;log('fail',d,`Loop detected on ${X}`,form,pos);act[key]--;return false}
+  const r=expand(X,rest,pos,d,form);act[key]--;return r}
+ const ok=go([start],0,0),deriv=[];
+ if(ok){let f=[start];deriv.push(f.join(' '));path.forEach(([A,alt])=>{const i=f.findIndex(x=>g.has(x));f=[...f.slice(0,i),...alt,...f.slice(i+1)];deriv.push(f.join(' ')||EPS)})}
+ return{ok,rows,tries,backs,aborted,deriv}}
+let btStep=0,btT=null;
+function btStop(){clearTimeout(btT);btT=null;$('#btplay').textContent='▶ Play'}
+function btRender(){const b=S.bt,tk=S.toks;btStop();
+ const why=b.aborted&&/left recursion/.test(b.aborted)?'Switch the selector to the grammar after removing left recursion and run it again.':b.backs?`The parser guessed wrong ${b.backs} time${b.backs>1?'s':''} and had to undo work. An LL(1) table avoids this: one token of look-ahead picks the right production.`:'No wrong guesses were needed for this input.';
+ $('#btres').innerHTML=`<div class="msg ${b.ok?'ok':'bad'}"><b>${b.ok?'Accepted':'Rejected'}</b> by the backtracking parser${b.aborted?' (search stopped early)':''}.</div>${b.aborted?`<div class="msg warn">${esc(b.aborted)}</div>`:''}<div class="stats"><div class="stat"><b>${b.rows.length}</b><small>steps logged</small></div><div class="stat"><b>${b.tries}</b><small>alternatives tried</small></div><div class="stat ${b.backs?'warn':'ok'}"><b>${b.backs}</b><small>backtracks</small></div><div class="stat"><b>${S.pr.rows.length}</b><small>LL(1) parser steps</small></div></div><p class="why">${esc(why)}</p>`;
+ $('#bttr').innerHTML='<tr><th>#</th><th>Action</th><th>Sentential form (left to right)</th><th>Input pointer</th></tr>'+b.rows.map((r,i)=>`<tr data-i="${i}" class="k-${r.k}"><td>${i+1}</td><td style="padding-left:${9+Math.min(r.d,24)*6}px">${esc(r.t)}</td><td>${esc(r.form)}</td><td>${esc(tk.slice(0,r.pos).join(' '))} <b>▸</b> ${esc(tk.slice(r.pos).join(' '))}</td></tr>`).join('');
+ document.querySelectorAll('#bttr tr[data-i]').forEach(r=>r.onclick=()=>{btStop();btGo(+r.dataset.i)});
+ $('#btsl').max=Math.max(b.rows.length-1,0);
+ $('#btder').innerHTML=b.ok?`<pre class="step">${esc(b.deriv.join('\\n⇒ '))}</pre>`:'<div class="msg bad">No derivation exists on this path, because the string was rejected.</div>';
+ btGo(b.rows.length-1)}
+function btGo(i){const b=S.bt;btStep=Math.max(0,Math.min(i,b.rows.length-1));$('#btsl').value=btStep;
+ document.querySelectorAll('#bttr tr[data-i]').forEach(r=>{const k=+r.dataset.i;r.classList.toggle('hid',k>btStep);r.classList.toggle('cur2',k==btStep)});
+ const c=document.querySelector('#bttr tr.cur2');c&&c.scrollIntoView({block:'nearest'});const r=b.rows[btStep];
+ if(r)$('#btstate').innerHTML=`<div class="step"><b>Step ${btStep+1} of ${b.rows.length}:</b> ${esc(r.t)}<pre>Sentential form: ${esc(r.form)}\\nInput: ${esc(S.toks.slice(0,r.pos).join(' '))} ▸ ${esc(S.toks.slice(r.pos).join(' '))}</pre></div>`}
+function btPlay(){if(btT)return btStop();if(btStep>=S.bt.rows.length-1)btGo(0);$('#btplay').textContent='⏸ Pause';
+ const tick=()=>{if(btStep>=S.bt.rows.length-1)return btStop();btGo(btStep+1);btT=setTimeout(tick,+$('#btspd').value)};btT=setTimeout(tick,150)}
+
+/* ---------- generation & practice ---------- */
+Object.assign(P,{mode:'ar',diff:'med',rq:0,rok:0,best:0,per:{}});
+const MODES={ar:'Accept or reject',lr:'Remove left recursion',tl:'Table lookup',ff:'FIRST / FOLLOW',na:'Next action'},rnd=a=>a[Math.random()*a.length|0],shuf=a=>[...a].sort(()=>Math.random()-.5);
+function derive(g,sym,d){if(!g.has(sym))return[sym];if(d>40)return[];const alts=g.get(sym),nt=a=>a.filter(x=>g.has(x)).length;
+ let pool=alts;if(d>5){const m=Math.min(...alts.map(nt));pool=alts.filter(a=>nt(a)==m)}
+ return rnd(pool).flatMap(x=>derive(g,x,d+1))}
+function genValid(){const L={easy:6,med:10,hard:16}[P.diff];for(let i=0;i<30;i++){const t=derive(S.g2,S.start,0);if(t.length<=L)return t}return derive(S.g2,S.start,6)}
+function mutate(t){const T=S.tb.terms.filter(x=>x!=='$'),o=[...t],k=Math.random()*4|0;
+ if(k==0&&o.length)o.splice(Math.random()*o.length|0,1);else if(k==1)o.splice(Math.random()*(o.length+1)|0,0,rnd(T));
+ else if(k==2&&o.length)o[Math.random()*o.length|0]=rnd(T);else if(o.length>1){const i=Math.random()*(o.length-1)|0;[o[i],o[i+1]]=[o[i+1],o[i]]}else o.push(rnd(T));return o}
+function genQ(){for(let i=0;i<40;i++){const v=genValid();if(Math.random()<.5)return{t:v,ok:true};const m=mutate(v);if(m.join(' ')===v.join(' '))continue;if(!runParse(S.g2,S.tb.M,S.start,m).res.ok)return{t:m,ok:false}}return{t:genValid(),ok:true}}
+const chips=(t,c='')=>t.length?t.map((s,i)=>`<span class="chip t ${c}" data-i="${i}">${esc(s)}</span>`).join(' '):'<span class="chip t">ε (empty string)</span>';
+const miniTrace=r=>`<details><summary>Show the parser trace</summary><div class="tw" style="max-height:240px"><table><tr><th>Stack</th><th>Input</th><th>Action</th></tr>${r.rows.slice(0,40).map(x=>`<tr><td>${esc(x.stack)}</td><td>${esc(x.input)}</td><td>${esc(x.act)}</td></tr>`).join('')}</table></div></details>`;
+function stats(){$('#sc').textContent=P.sc;$('#tot').textContent=P.n;$('#acc').textContent=P.n?Math.round(P.ok/P.n*100)+'%':'–';$('#stk').textContent=P.stk;$('#best').textContent=P.best;
+ $('#pbar').style.width=Math.min(P.rq,10)*10+'%';$('#pround').textContent=`Question ${Math.min(P.rq+1,10)} of 10`;
+ $('#pper').innerHTML=Object.entries(P.per).map(([m,v])=>`${MODES[m]}: ${v[0]}/${v[1]}`).join(' &nbsp;|&nbsp; ')}
+function fin(right,pts,html,label){P.ans=true;P.n++;P.rq++;const pm=P.per[P.mode]=P.per[P.mode]||[0,0];pm[1]++;
+ if(right){P.ok++;P.rok++;pm[0]++;P.stk++;P.best=Math.max(P.best,P.stk);P.sc+=pts+(P.stk>=3?2:0)}else P.stk=0;
+ P.hist.unshift({l:label,right});$('#phist').innerHTML=P.hist.slice(0,8).map(h=>`<div>${h.right?'✔':'✘'} ${MODES[h.l.m]}: <span class="chip t">${esc(h.l.d)}</span></div>`).join('');
+ const done=P.rq>=10;$('#pfb').innerHTML=`<div class="msg ${right?'ok':'bad'}"><b>${right?'Correct!'+(P.stk>=3?' Streak bonus +2.':''):'Not quite.'}</b> ${html}<div class="row"><button class="p" id="nx">${done?'Finish round':'Next question'}</button></div></div>`;
+ $('#nx').onclick=done?summary:newQ;const sb=$('#see');if(sb)sb.onclick=()=>{$('#s').value=P.cur.t.join(' ');analyze();tab(4)};stats()}
+function summary(){const r=P.rok;$('#pq').innerHTML=`<h3>Round complete</h3><div class="big"><b>${r} / 10</b> correct</div><p>${r>=9?'Excellent. You can predict the parser reliably.':r>=6?'Good. Revisit the FIRST/FOLLOW tab for the ones you missed.':'Keep going. Step through the trace tab slowly, then try again.'}</p>`;
+ $('#pfb').innerHTML='<button class="p" id="nr">Start new round</button>';$('#nr').onclick=()=>{P.rq=0;P.rok=0;newQ()};stats()}
+function newQ(){if(!S.g2)return;P.ans=false;$('#pfb').innerHTML='';$('#pref').innerHTML=refHTML();({ar:qAR,lr:qLR,tl:qTL,ff:qFF,na:qNA})[P.mode]();stats()}
+const nts=()=>P.diff=='hard'?[...S.g2.keys()]:[...S.g.keys()];
+function refHTML(){return `<details open class="refbox"><summary>Grammar reference: the questions below are about these grammars</summary><div class="refgrid"><div><b>Your grammar</b><pre>${esc(gtext(S.g))}</pre></div><div><b>After removing left recursion and left factoring</b> <span class="why">(used for the table, FIRST, FOLLOW and parsing)</span><pre>${esc(gtext(S.g2))}</pre></div></div></details>`}
+function bind(correct,fn){document.querySelectorAll('#pq .opt').forEach(b=>b.onclick=()=>{if(P.ans)return;document.querySelectorAll('#pq .opt').forEach(x=>{x.disabled=true;if(x.textContent===correct)x.classList.add('good')});b.classList.add('pick');fn(b.textContent===correct)})}
+/* mode 1: accept / reject (+ bonus: locate the error) */
+function qAR(){const q=genQ();P.cur=q;
+ $('#pq').innerHTML=`<p class="why">Will the LL(1) parser accept this string?</p><div class="big">${chips(q.t)}</div><div class="row" style="justify-content:center;margin-top:14px"><button class="p" id="pa">Accept</button><button id="pr" style="background:var(--ink);color:#fff">Reject</button><button id="ph">Hint</button></div>`;
+ $('#pmodes').innerHTML=Object.entries(MODES).map(([k,v])=>`<button data-m="${k}" class="${k=='ar'?'on':''}">${v}</button>`).join('');document.querySelectorAll('#pmodes button').forEach(b=>b.onclick=()=>setMode(b.dataset.m));$('#pdiff').onchange=e=>{P.diff=e.target.value;newQ()};$('#prs').onclick=()=>{Object.assign(P,{n:0,sc:0,ok:0,stk:0,best:0,rq:0,rok:0,per:{},hist:[]});$('#phist').innerHTML='';newQ()};
+ if(S.tb.conf.length)$('#pfb').innerHTML='<div class="msg warn">This grammar has LL(1) conflicts, so the parser may disagree with the true language on some strings.</div>'}
+function arAns(g){if(P.ans)return;const q=P.cur,r=runParse(S.g2,S.tb.M,S.start,q.t),truth=q.ok||r.res.ok,right=g===truth;
+ ['#pa','#pr','#ph'].forEach(i=>$(i).disabled=true);
+ fin(right,10,`The parser ${truth?'accepts':'rejects'} this string. ${truth?'':esc(r.res.msg)}${miniTrace(r)}<div class="row"><button id="see">Open in studio</button></div>`,{m:'ar',d:q.t.join(' ')||'ε'});
+ if(!truth&&right){const n=q.t.length,pos=r.res.pos;
+  $('#pq').insertAdjacentHTML('beforeend',`<div id="bonus" style="margin-top:14px"><p><b>Bonus (+5):</b> click the token where the parser fails.</p><div class="big">${q.t.map((s,i)=>`<button class="chip t click" data-i="${i}">${esc(s)}</button>`).join(' ')} <button class="chip t click" data-i="${n}">end of input</button></div></div>`);
+  document.querySelectorAll('#bonus .click').forEach(b=>b.onclick=()=>{const ok=+b.dataset.i===Math.min(pos,n);document.querySelectorAll('#bonus .click').forEach(x=>{x.disabled=true;if(+x.dataset.i===Math.min(pos,n))x.style.background='var(--okl)'});if(ok){P.sc+=5;stats()}else b.style.background='var(--erl)';
+   $('#bonus').insertAdjacentHTML('beforeend',`<div class="msg ${ok?'ok':'bad'}">${ok?'Right, +5 points.':'The parser fails at token '+(Math.min(pos,n)+1)+'.'}</div>`)})}}
+function hint(){$('#pfb').innerHTML=`<div class="msg warn">${S.start} can begin with: <b>${esc([...S.ffr.F[S.start]].join(', '))}</b>. Walk the stack and check each token against the table.</div>`}
+/* mode 2: left recursion elimination */
+function qLR(){const cand=[...S.g].filter(([A,v])=>v.some(a=>a[0]===A&&a.length>1)&&v.some(a=>a[0]!==A));P.cur={t:[]};
+ if(!cand.length){$('#pq').innerHTML='<p><b>This grammar has no immediate left recursion.</b></p><p class="why">Choose “Expression (left recursion)” in the sidebar, or try another drill.</p>';return}
+ const[A,v]=rnd(cand),rec=v.filter(a=>a[0]===A&&a.length>1).map(a=>a.slice(1)),base=v.filter(a=>a[0]!==A),A2=fresh(A,S.g),J=x=>x.map(show).join(' | '),
+ r1=J(base.map(b=>[...b,A2])),r2=J([...rec.map(x=>[...x,A2]),[]]),f=(a,b)=>`${A} → ${a}\n${A2} → ${b}`,ok=f(r1,r2),
+ wr=[f(r1,J(rec.map(x=>[...x,A2]))),f(J(base.map(b=>[A2,...b])),r2),f(J(base),r2),f(r1,J([...rec.map(x=>[A2,...x]),[]]))].filter((x,k,a)=>x!==ok&&a.indexOf(x)==k),
+ opts=shuf([ok,...shuf(wr).slice(0,3)]);
+ $('#pq').innerHTML=`<p class="why">Rule: A → Aα | β becomes A → βA′ and A′ → αA′ | ε</p><div class="big">Remove the left recursion from<br><b>${esc(A+' → '+v.map(show).join(' | '))}</b></div><div class="opts">${opts.map(o=>`<button class="opt" style="white-space:pre">${esc(o)}</button>`).join('')}</div>`;
+ bind(ok,r=>fin(r,12,`Here α = ${esc(J(rec))} and β = ${esc(J(base))}, so the new rules are:<pre>${esc(ok)}</pre>The new nonterminal ${esc(A2)} must end with an ε alternative so the repetition can stop, and it goes <i>after</i> each β so the first symbol is no longer ${esc(A)}.`,{m:'lr',d:A}))}
+/* mode 3: table lookup */
+function qTL(){const pool=nts();let A,t,c;for(let i=0;i<80;i++){A=rnd(pool);t=rnd(S.tb.terms);c=S.tb.M[A][t];if(c&&c.length>1)continue;if(c||Math.random()<.3)break}
+ const E='Empty (syntax error)',ok=c?prod(A,c[0].a):E,all=[...S.g2].flatMap(([N,v])=>v.map(a=>prod(N,a))),own=S.g2.get(A).map(a=>prod(A,a)),
+ dist=[...new Set([...shuf(own),...shuf(all)])].filter(x=>x!==ok).slice(0,c?3:3),opts=shuf([...new Set([ok,E,...dist])]);P.cur={t:[]};
+ $('#pq').innerHTML=`<p class="why">Use the LL(1) table built from the transformed grammar.</p><div class="big">Which production sits in <b>M[${A}, ${esc(t)}]</b>?</div><div class="opts">${opts.map(o=>`<button class="opt">${esc(o)}</button>`).join('')}</div>`;
+ bind(ok,r=>fin(r,10,c?`${esc(ok)} goes in M[${A}, ${esc(t)}] because ${esc(c[0].why)}.`:`M[${A}, ${esc(t)}] is empty: ${esc(t)} is not in FIRST of any alternative of ${A}, and no alternative of ${A} can derive ε with ${esc(t)} in FOLLOW(${A}). Seeing this cell during parsing is a syntax error.`,{m:'tl',d:`M[${A},${t}]`}))}
+/* mode 3: FIRST / FOLLOW */
+function qFF(){const A=rnd(nts()),k=rnd(['FIRST','FOLLOW']),set=k=='FIRST'?S.ffr.F[A]:S.ffr.Fo[A],R=k=='FIRST'?S.ffr.RF:S.ffr.RFo,uni=[...S.tb.terms.filter(x=>x!='$'),k=='FIRST'?EPS:'$'];P.cur={t:[]};
+ $('#pq').innerHTML=`<p class="why">Select every member, then press Check.</p><div class="big">What is <b>${k}(${A})</b>?</div><div style="margin:12px 0 14px" class="big">${uni.map(u=>`<button class="chip t tg" data-v="${esc(u)}">${esc(u)}</button>`).join(' ')}</div><button class="p" id="chk">Check</button>`;
+ document.querySelectorAll('#pq .tg').forEach(b=>b.onclick=()=>{if(!P.ans)b.classList.toggle('sel')});
+ $('#chk').onclick=()=>{if(P.ans)return;const sel=new Set([...document.querySelectorAll('#pq .tg.sel')].map(b=>b.dataset.v)),right=sel.size==set.size&&[...set].every(x=>sel.has(x));$('#chk').disabled=true;
+  document.querySelectorAll('#pq .tg').forEach(b=>{const v=b.dataset.v;b.style.outline=set.has(v)?'3px solid var(--ok)':sel.has(v)?'3px solid var(--er)':''});
+  fin(right,12,`${k}(${A}) = { ${esc([...set].join(', '))} }<br>${[...set].map(t=>`<span class="why">${esc(R[A+'|'+t])}</span>`).join('<br>')}`,{m:'ff',d:`${k}(${A})`})}}
+/* mode 4: next parser action */
+function qNA(){const q=genQ(),r=runParse(S.g2,S.tb.M,S.start,q.t),i=rnd(r.rows.map((x,k)=>k).filter(k=>!/^Accept/.test(r.rows[k].act)||Math.random()<.2)),row=r.rows[i],
+ bef=i?r.rows[i-1]:{stack:S.start+' $',input:[...q.t,'$'].join(' ')},top=bef.stack.split(' ')[0],a=bef.input.split(' ')[0],ERR='Error (syntax error)',
+ lab=x=>/^Output/.test(x)?x.split('  ⚠')[0]:/^Match/.test(x)?x:/^Accept/.test(x)?'Accept ✔':ERR,ok=lab(row.act),o=new Set([ok,ERR]);
+ if(S.g2.has(top)){S.g2.get(top).forEach(x=>o.add('Output '+prod(top,x)));o.add(`Match "${a}"`)}else if(top==='$')o.add('Accept ✔');else o.add(`Match "${top}"`);
+ let arr=[...o].filter(x=>x!==ok);arr=shuf([ok,...shuf(arr).slice(0,3)]);P.cur=q;
+ $('#pq').innerHTML=`<p class="why">Parsing ${chips(q.t)||''}</p><div class="big" style="text-align:left"><p>Stack (top on the left): ${bef.stack.split(' ').map((s,k)=>`<span class="chip ${k?'':'t'}">${esc(s)}</span>`).join(' ')}</p><p>Remaining input: ${bef.input.split(' ').map(s=>`<span class="chip t">${esc(s)}</span>`).join(' ')}</p></div><div class="big">What does the parser do next?</div><div class="opts">${arr.map(x=>`<button class="opt">${esc(x)}</button>`).join('')}</div>`;
+ bind(ok,rt=>fin(rt,8,esc(row.act)+(S.g2.has(top)&&S.tb.M[top][a]?` (the table entry M[${top}, ${esc(a)}] decides this).`:''),{m:'na',d:`step ${i+1}`}))}
+function setMode(m){P.mode=m;P.rq=0;P.rok=0;document.querySelectorAll('#pmodes button').forEach(b=>b.classList.toggle('on',b.dataset.m==m));newQ()}
+/* ---------- init ---------- */
+const names=Object.keys(PRE);$('#preset').innerHTML=names.map(n=>`<option>${n}</option>`).join('');
+['Valid','Invalid','Epsilon'].forEach((l,i)=>{const b=document.createElement('button');b.textContent=l+' sample';b.onclick=()=>{$('#s').value=PRE[$('#preset').value].s[i];analyze();tab(4)};$('#samples').append(b)});
+function loadPreset(){const p=PRE[$('#preset').value];$('#g').value=p.g;$('#s').value=p.s[0];analyze();newQ()}
+$('#preset').onchange=loadPreset;$('#go').onclick=()=>{analyze();tab(4)};$('#clr').onclick=()=>{$('#s').value='';analyze();$('#s').focus()};
+$('#rand').onclick=()=>{if(!S.g2&&!analyze())return;$('#s').value=genValid().join(' ');analyze();tab(4)};
+$('#s').onkeydown=e=>{if(e.key=='Enter'){analyze();tab(4)}};$('#s').oninput=()=>{clearTimeout($('#s').t);$('#s').t=setTimeout(()=>{analyze();tab(4)},250)};
+['#first','#prev','#next','#last'].forEach((id,k)=>$(id).onclick=()=>{stop();goto([0,step-1,step+1,1e9][k])});
+$('#play').onclick=play;$('#sl').oninput=e=>{stop();goto(+e.target.value)};
+$('#pmodes').innerHTML=Object.entries(MODES).map(([k,v])=>`<button data-m="${k}" class="${k=='ar'?'on':''}">${v}</button>`).join('');document.querySelectorAll('#pmodes button').forEach(b=>b.onclick=()=>setMode(b.dataset.m));$('#pdiff').onchange=e=>{P.diff=e.target.value;newQ()};$('#prs').onclick=()=>{Object.assign(P,{n:0,sc:0,ok:0,stk:0,best:0,rq:0,rok:0,per:{},hist:[]});$('#phist').innerHTML='';newQ()};
+$('#nav').innerHTML=['Left recursion','Left factoring','FIRST / FOLLOW','LL(1) table','Parse &amp; tree','Backtracking','Practice'].map((n,i)=>`<button class="${i==4?'on':''}">${n}</button>`).join('');
+document.querySelectorAll('nav button').forEach((b,i)=>b.onclick=()=>{tab(i);if(i==6&&!P.cur)newQ()});
+$('#g').oninput=()=>{clearTimeout($('#g').t);$('#g').t=setTimeout(()=>{if(analyze())newQ()},400)};
+$('#btg').onchange=()=>{S.bt=backtrack(S[$('#btg').value],S.start,S.toks);btRender()};
+['#btfirst','#btprev','#btnext','#btlast'].forEach((id,k)=>$(id).onclick=()=>{btStop();btGo([0,btStep-1,btStep+1,1e9][k])});
+$('#btplay').onclick=btPlay;$('#btsl').oninput=e=>{btStop();btGo(+e.target.value)};
+loadPreset();
+</script></body></html>
