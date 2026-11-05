@@ -6,24 +6,6 @@ Built for **PS-03: Compiler Design**
 
 ---
 
-## Table of Contents
-
-1. [Overview](#overview)
-2. [Problem Statement and Objectives](#problem-statement-and-objectives)
-3. [Features](#features)
-4. [Project Workflow](#project-workflow)
-5. [How Each Stage Works](#how-each-stage-works)
-6. [Worked Example](#worked-example)
-7. [Grammar Notation](#grammar-notation)
-8. [How to Run](#how-to-run)
-9. [Practice Mode](#practice-mode)
-10. [Sample Grammars](#sample-grammars)
-11. [Algorithms](#algorithms)
-12. [Repository Contents](#repository-contents)
-13. [Technology](#technology)
-
----
-
 ## Overview
 
 Top-down parsing is usually taught on paper: students remove left recursion by hand, compute FIRST and FOLLOW sets, fill a table and trace a stack. Each step depends on the previous one, so one early mistake carries through the whole exercise, and the algorithm is hard to see in action.
